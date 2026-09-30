@@ -19,14 +19,24 @@ export default function Home() {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function loadSubscription() {
+  async function fetchSubscription(): Promise<Subscription | null> {
     const res = await fetch(`/api/subscription?userId=${DEMO_USER.id}`);
     const data = await res.json();
-    setSub(data.subscription);
+    return data.subscription;
+  }
+
+  async function loadSubscription() {
+    setSub(await fetchSubscription());
   }
 
   useEffect(() => {
-    loadSubscription();
+    let active = true;
+    fetchSubscription().then((s) => {
+      if (active) setSub(s);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function subscribe(priceId: string) {
@@ -37,7 +47,7 @@ export default function Home() {
       body: JSON.stringify({ priceId, userId: DEMO_USER.id, email: DEMO_USER.email }),
     });
     const { url } = await res.json();
-    window.location.href = url;
+    window.location.assign(url);
   }
 
   async function manage() {
@@ -48,7 +58,7 @@ export default function Home() {
       body: JSON.stringify({ customerId: sub.customer_id }),
     });
     const { url } = await res.json();
-    window.location.href = url;
+    window.location.assign(url);
   }
 
   const activeTier = TIERS.find((t) => t.priceId === sub?.price_id);
